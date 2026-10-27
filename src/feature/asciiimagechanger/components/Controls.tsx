@@ -1,162 +1,174 @@
-import type { ChangeEvent, RefObject } from "react";
+import type { ChangeEvent, ReactNode, RefObject } from "react";
 import type { ColorMode } from "../types";
+import { lenses, lensById } from "../../../lenses";
+import { FluidBackground } from "./FluidBackground";
+import { MatrixRainBackground } from "./MatrixRainBackground";
 
 interface ControlsProps {
   fileInputRef: RefObject<HTMLInputElement>;
-  onFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
-  colorMode: ColorMode;
-  onColorModeChange: (mode: ColorMode) => void;
+  onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
   zoom: number;
   onZoomChange: (zoom: number) => void;
-  hasGrid: boolean;
+  hasImage?: boolean;
   fileName: string;
-  onDownloadText: () => void;
   onDownloadPng: () => void;
+  activeLens?: string;
+  onLensChange?: (lensId: string) => void;
+  lensStrength?: number;
+  onLensStrengthChange?: (strength: number) => void;
+  children?: ReactNode;
+  colorMode?: ColorMode;
+  onColorModeChange?: (mode: ColorMode) => void;
+  onDownloadText?: () => void;
+  isAscii?: boolean;
+  hasGrid?: boolean;
 }
 
-const panelBorder = "#262626";
-const mutedText = "#a3a3a3";
-
-/**
- * Purely presentational: every value it shows and every action it
- * triggers comes from props. It has no idea how conversion works,
- * how the grid is built, or what "zoom" does to the canvas — it just
- * reports user intent upward.
- */
 export function Controls({
   fileInputRef,
   onFileChange,
-  colorMode,
-  onColorModeChange,
   zoom,
   onZoomChange,
-  hasGrid,
+  hasImage: hasImageProp,
   fileName,
-  onDownloadText,
   onDownloadPng,
+  onDownloadText,
+  activeLens = "ascii",
+  onLensChange,
+  lensStrength,
+  onLensStrengthChange,
+  children,
+  colorMode = "color",
+  onColorModeChange,
+  isAscii = false,
+  hasGrid = false,
 }: ControlsProps) {
+  const hasImage = hasImageProp ?? hasGrid;
+  const activeLensObject = lensById(activeLens);
+  const modes = [{ id: "ascii", label: "ASCII Art" }, ...lenses];
+  const pixelSize = lensStrength ?? activeLensObject?.param.default ?? 3;
+  const pixelSizeMin = activeLensObject?.param.min ?? 1;
+  const pixelSizeMax = activeLensObject?.param.max ?? 24;
+  const pixelSizeStep = activeLensObject?.param.step ?? 1;
+
   return (
-    <>
-      <div
-      className="w-full max-w-[980px] w flex flex-wrap gap-10 items-center"
-      >
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="px-4 py-[9px] rounded-lg border bg-[#171717] text-[13px] font-medium cursor-pointer 
-          onhover:text-green-500
-          font-[inherit]"
-          style={{ borderColor: panelBorder }}
-        >
-          Choose image
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          onChange={onFileChange}
-          style={{ display: "none" }}
-        />
-
-        <div
-          style={{
-            display: "flex",
-            border: `1px solid ${panelBorder}`,
-            borderRadius: 8,
-            overflow: "hidden",
-          }}
-        >
-          {(["color", "bw", "spectrum", "soft"] as ColorMode[]).map((mode) => (
-            <button
-              key={mode}
-              onClick={() => onColorModeChange(mode)}
-              className="hover:text-orange-400"
-              style={{
-                padding: "9px 14px",
-                border: "none",
-                background: colorMode === mode ? "#f5f5f5" : "transparent",
-                color: colorMode === mode ? "#111111" : "inherit",
-                fontSize: 13,
-                fontFamily: "inherit",
-                cursor: "pointer",
-              }}
-            >
-              {mode === "color"
-                ? "Color"
-                : mode === "bw"
-                ? "Black & white"
-                : mode === "spectrum"
-                ? "Spectrum"
-                : "Low detail"}
-            </button>
-          ))}
-        </div>
-
-        {hasGrid && (
-          <>
-            <button
-              onClick={onDownloadText}
-              className="
-  px-4 py-[9px]
-  text-green-400
-  border border-[#333]
-  rounded-lg
-  bg-transparent
-  cursor-pointer
-  text-[13px]
-  font-[inherit]
-  hover:text-orange-400
-"
-            >
-              Download .txt
-            </button>
-            <button
-              onClick={onDownloadPng}
-             className="
-  px-4 py-[9px]
-  text-green-400
-  border border-[#333]
-  rounded-lg
-  bg-transparent
-  cursor-pointer
-  text-[13px]
-  font-[inherit]
-  hover:text-orange-400
-"
-            >
-              Download PNG
-            </button>
-          </>
-        )}
-
-        {fileName && (
-          <span style={{ fontSize: 12, color: mutedText }}>{fileName}</span>
-        )}
-      </div>
-
-      {hasGrid && (
-        <div
-          className="w-full max-w-[980] flex align-middle gap-3"
-        >
-          <span 
-          style={{ fontSize: 12, color: mutedText, whiteSpace: "nowrap" }}>
-            Zoom
+    <div className="studio-app">
+      <MatrixRainBackground />
+      <FluidBackground />
+      <header className="studio-header">
+        <h1>EL-SY</h1>
+        <div className="studio-header-actions">
+          <span className="studio-filename" title={fileName || "No image selected"}>
+            {fileName || "No image selected"}
           </span>
-          <input
-            type="range"
-            min={1}
-            max={300}
-            step={1}
-            value={zoom}
-            onChange={(e) => onZoomChange(Number(e.target.value))}
-            style={{ flex: 1, accentColor: "#f5f5f5" }}
-          />
-          <span
-            style={{ fontSize: 12, color: mutedText, width: 44, textAlign: "right" }}
+          <button
+            type="button"
+            className="studio-button"
+            onClick={() => fileInputRef.current?.click()}
           >
-            {zoom}%
-          </span>
+            Choose image
+          </button>
+          <input
+            ref={fileInputRef}
+            className="studio-file-input"
+            type="file"
+            accept="image/*"
+            onChange={onFileChange}
+          />
+          {isAscii && (
+            <button
+              type="button"
+              className="studio-button"
+              onClick={onDownloadText}
+              disabled={!hasImage}
+            >
+              Download TXT
+            </button>
+          )}
+          <button
+            type="button"
+            className="studio-button studio-button-primary"
+            onClick={onDownloadPng}
+            disabled={!hasImage}
+          >
+            Download PNG
+          </button>
         </div>
-      )}
-    </>
+      </header>
+
+      <div className="studio-workspace">
+        <aside className="studio-sidebar">
+          <h2>CHOOSE A MODE</h2>
+          <nav aria-label="Image mode" className="studio-mode-list">
+            {modes.map((mode) => (
+              <div key={mode.id} className="studio-mode-group">
+                <button
+                  type="button"
+                  aria-pressed={activeLens === mode.id}
+                  className={`studio-mode-button${activeLens === mode.id ? " is-active" : ""}`}
+                  onClick={() => onLensChange?.(mode.id)}
+                >
+                  {mode.label}
+                </button>
+                {mode.id === "ascii" && isAscii && (
+                  <div className="studio-submode-list" aria-label="ASCII color mode">
+                    {(["color", "bw", "spectrum", "soft"] as const).map((submode) => (
+                      <button
+                        key={submode}
+                        type="button"
+                        aria-pressed={colorMode === submode}
+                        className={`studio-submode-button${colorMode === submode ? " is-active" : ""}`}
+                        onClick={() => onColorModeChange?.(submode)}
+                      >
+                        {submode === "color"
+                          ? "Color"
+                          : submode === "bw"
+                            ? "Black & white"
+                            : submode === "spectrum"
+                              ? "Spectrum"
+                              : "Low detail"}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </nav>
+        </aside>
+
+        <main className="studio-stage" aria-label="Image preview">
+          {children}
+
+          <div className="studio-slider-bar">
+            <label className="studio-slider">
+              <span className="studio-slider-label">Pixel size</span>
+              <input
+                type="range"
+                min={pixelSizeMin}
+                max={pixelSizeMax}
+                step={pixelSizeStep}
+                value={pixelSize}
+                disabled={!activeLensObject}
+                onChange={(event) => onLensStrengthChange?.(Number(event.target.value))}
+              />
+              <output>{pixelSize}</output>
+            </label>
+
+            <label className="studio-slider">
+              <span className="studio-slider-label">Zoom</span>
+              <input
+                type="range"
+                min={1}
+                max={300}
+                step={1}
+                value={zoom}
+                onChange={(event) => onZoomChange(Number(event.target.value))}
+              />
+              <output>{zoom}%</output>
+            </label>
+          </div>
+        </main>
+      </div>
+    </div>
   );
 }

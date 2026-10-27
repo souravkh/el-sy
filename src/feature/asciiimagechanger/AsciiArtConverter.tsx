@@ -1,13 +1,18 @@
 import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useAsciiConverter } from "./hooks/useAsciiConverter";
-import { toDisplayGrid, gridToText, downloadTextFile } from "./utils/gridUtils";
-import { renderGridToCanvas, downloadCanvasAsPng } from "./utils/exportUtils";
+import { toDisplayGrid } from "./utils/gridUtils";
+import {
+  renderGridToCanvas,
+  renderImageDataToCanvas,
+  downloadCanvasAsPng,
+} from "./utils/exportUtils";
+import { downloadTextFile, gridToText } from "./utils/gridUtils";
 import { Controls } from "./components/Controls";
 import { AsciiCanvas } from "./components/AsciiCanvas";
-import { MatrixRainBackground } from "./components/MatrixRainBackground";
+import { ImageEffectCanvas } from "./components/ImageEffectCanvas";
+import { lensById } from "../../lenses";
 import type { ColorMode } from "./types";
-import { FluidBackground } from "./components/FluidBackground";
 
 /**
  * Container component. It owns two kinds of state:
@@ -20,25 +25,53 @@ import { FluidBackground } from "./components/FluidBackground";
  * Everything below this component is presentational and stateless.
  */
 export default function AsciiArtConverter() {
-  const { grid, fileName, isProcessing, error, processImage } =
-    useAsciiConverter();
+  const {
+    grid,
+    effectImage,
+    hasImage,
+    fileName,
+    isProcessing,
+    error,
+    activeLens,
+    lensStrength,
+    setActiveLens,
+    setLensStrength,
+    processImage,
+  } = useAsciiConverter();
 
   const [zoom, setZoom] = useState(37);
   const [colorMode, setColorMode] = useState<ColorMode>("color");
   const fileInputRef = useRef<HTMLInputElement>(null!);
 
-  // Expensive-ish (loops over every cell) but only reruns when the
-  // grid or color mode actually change — not on every zoom tick.
   const coloredGrid = useMemo(
     () => toDisplayGrid(grid, colorMode),
     [grid, colorMode]
   );
 
+  const isAscii = activeLens === "ascii";
+  const activeEffectName = lensById(activeLens)?.label ?? "image";
+
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setZoom(37);
+    setZoom(isAscii ? 37 : 100);
     processImage(file);
+  };
+
+  const handleLensChange = (lensId: string) => {
+    setZoom(lensId === "ascii" ? 37 : 100);
+    setActiveLens(lensId);
+  };
+
+  const handleDownloadPng = () => {
+    const canvas = isAscii
+      ? renderGridToCanvas(coloredGrid, 2)
+      : effectImage
+        ? renderImageDataToCanvas(effectImage)
+        : null;
+    if (!canvas) return;
+    const name = `${fileName.replace(/\.[^/.]+$/, "") || "image"}${isAscii ? "-ascii-art" : "-effect"}.png`;
+    downloadCanvasAsPng(canvas, name);
   };
 
   const handleDownloadText = () => {
@@ -47,60 +80,42 @@ export default function AsciiArtConverter() {
     downloadTextFile(text, name);
   };
 
-  const handleDownloadPng = () => {
-    const canvas = renderGridToCanvas(coloredGrid, 2); // 2x supersampled
-    const name = `${fileName.replace(/\.[^/.]+$/, "") || "ascii-art"}.png`;
-    downloadCanvasAsPng(canvas, name);
-  };
-
   return (
-    <div
-      className="relative
-      min-h-screen w-full bg-black text-white 
-      p-[20px_80px] box-border flex flex-col item-center overflow-hidden gap-5"
-      style={{
-        fontFamily:
-          "'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
-      }}
+    <Controls
+      fileInputRef={fileInputRef}
+      onFileChange={handleFileChange}
+      zoom={zoom}
+      onZoomChange={setZoom}
+      hasImage={hasImage}
+      fileName={fileName}
+      onDownloadPng={handleDownloadPng}
+      onDownloadText={handleDownloadText}
+      isAscii={isAscii}
+      colorMode={colorMode}
+      onColorModeChange={setColorMode}
+      activeLens={activeLens}
+      onLensChange={handleLensChange}
+      lensStrength={lensStrength}
+      onLensStrengthChange={setLensStrength}
     >
-      <MatrixRainBackground />
-      <FluidBackground />
-      <div 
-       className="relative z-10 w-full max-w-[980px]" >      
-        <h1 
-        className="font-bold text-[22px] border-spacing-0.5 m-0">
-          Image → ASCII
-        </h1>
-        <p
-          className="text-[13px] text-yellow-400 mr-[6px_0_0]">
-          Upload a picture, pick a view mode, then use the slider to zoom.
-        </p>
-      </div>
-
-      <div
-     className="relative z-[1] w-full max-w-[980px] flex flex-col items-center gap-[20px]"
-      >
-        <Controls
-          fileInputRef={fileInputRef}
-          onFileChange={handleFileChange}
-          colorMode={colorMode}
-          onColorModeChange={setColorMode}
-          zoom={zoom}
-          onZoomChange={setZoom}
-          hasGrid={grid.length > 0}
-          fileName={fileName}
-          onDownloadText={handleDownloadText}
-          onDownloadPng={handleDownloadPng}
-        />
-
-        <AsciiCanvas
-          coloredGrid={coloredGrid}
-          zoom={zoom}
-          isProcessing={isProcessing}
-          hasImage={grid.length > 0}
-          error={error}
-        />
-      </div>
-    </div>
+          {isAscii ? (
+            <AsciiCanvas
+              coloredGrid={coloredGrid}
+              zoom={zoom}
+              isProcessing={isProcessing}
+              hasImage={grid.length > 0}
+              error={error}
+            />
+          ) : (
+            <ImageEffectCanvas
+              imageData={effectImage}
+              zoom={zoom}
+              isProcessing={isProcessing}
+              hasImage={hasImage}
+              error={error}
+              effectName={activeEffectName}
+            />
+          )}
+    </Controls>
   );
 }

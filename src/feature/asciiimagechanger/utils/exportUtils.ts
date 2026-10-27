@@ -55,3 +55,13 @@ export function downloadCanvasAsPng(
     URL.revokeObjectURL(url);
   }, "image/png");
 }
+
+export function renderImageDataToCanvas(imageData: ImageData): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  canvas.width = imageData.width;
+  canvas.height = imageData.height;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Canvas not supported");
+  context.putImageData(imageData, 0, 0);
+  return canvas;
+}
