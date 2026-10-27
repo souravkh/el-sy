@@ -127,6 +127,13 @@ npm run preview
 npm run lint
 ```
 
+## Deploy to GitHub Pages
+
+The GitHub Actions workflow builds the app and deploys it to GitHub Pages when
+you push to `main`. In the repository settings, set **Settings > Pages > Build
+and deployment > Source** to **GitHub Actions**. The Vite base path is configured
+for the `el-sy` repository name.
+
 ## Project structure
 
 ```text
