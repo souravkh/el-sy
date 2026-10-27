@@ -2,9 +2,6 @@
 
 *Every Look, Still You.*
 
-Turn your photo into an expressive ASCII portrait without sharing the original
-image.
-
 **EL-SY** is a browser-based studio that transforms photos into ASCII art,
 pixel art, and retro-inspired effects while letting you control how detailed
 and recognizable the result is.
@@ -20,7 +17,7 @@ stylized representation of yourself instead of the original photograph.
 ## Why EL-SY?
 
 The idea started with a simple thought: *What if you want to be seen, just not
-exactly as you are?*
+exactly as you are? or Simple ELSE look*
 
 Not everyone wants their actual face on a profile picture. Sometimes you want
 something personal, something that feels like you, without putting your literal
@@ -97,8 +94,8 @@ npm -v
 ### Install dependencies
 
 ```bash
-git clone https://github.com/souravkh/ascii-lens.git
-cd ascii-lens
+git clone https://github.com/souravkh/el-sy.git
+cd el-sy
 npm install
 ```
 
@@ -133,7 +130,7 @@ npm run lint
 ## Project structure
 
 ```text
-ascii-lens/
+el-sy/
 ├── public/                         # Static assets
 ├── src/
 │   ├── feature/asciiimagechanger/
